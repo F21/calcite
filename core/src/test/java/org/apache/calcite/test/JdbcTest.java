@@ -2416,7 +2416,6 @@ public class JdbcTest {
   }
 
   /** One of the most expensive foodmart queries. */
-  @Ignore // OOME on Travis; works on most other machines
   @Test public void testExplainJoin3() throws IOException {
     withFoodMartQuery(8)
         .explainContains(""
