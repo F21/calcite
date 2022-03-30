@@ -1,0 +1,44 @@
+name: Sync master and site branches
+
+on:
+  push:
+    tags:
+      - calcite-[0-9]+.[0-9]+.[0-9]+
+
+jobs:
+  sync-master-site:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          ref: site
+      - name: Sync master and site branches
+        run: |
+          git reset --hard origin/master
+          git push --force origin site
+
+  publish-website:
+    runs-on: ubuntu-latest
+    needs: sync-master-site
+    steps:
+      - uses: actions/checkout@v3
+      - name: Build site
+        run: |
+          docker compose run build-site
+      - name: Push site
+        env:
+          CALCITE_WEBSITE_BUILD: ${{ secrets.CALCITE_WEBSITE_BUILD }}
+        run: |
+          git config --global url."https://F21:$CALCITE_WEBSITE_BUILD@github.com/".insteadOf "https://github.com/"
+          cd site/target
+          git init
+          git remote add origin git@github.com:F21/calcite-site-test.git
+          git fetch
+          git reset origin/master --soft
+          git reset -- javadocAggregate/
+          git checkout -- javadocAggregate/
+          git reset -- avatica/
+          git checkout -- avatica/
+          git commit -m "Website build from calcite@$GITHUB_SHA"
+          git push origin master
